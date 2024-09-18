@@ -1,8 +1,15 @@
+import { fileURLToPath } from 'url';
+import { dirname, join, normalize, resolve, extname } from 'path';
 import { readFile, accessSync, constants } from 'fs';
-import { createServer } from 'http';
-import { join, normalize, resolve, extname } from 'path';
+import dotenv from 'dotenv';
+import http from 'http';
 
-const port = 8100;
+dotenv.config(); // Load environment variables from .env file
+
+// Simulating __dirname in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 const directoryName = './public';
 
 const types = {
@@ -42,7 +49,7 @@ const types = {
 
 const root = normalize(resolve(directoryName));
 
-const server = createServer((req, res) => {
+const serveFiles = (req, res) => {
   console.log(`${req.method} ${req.url}`);
 
   const extension = extname(req.url).slice(1);
@@ -84,8 +91,27 @@ const server = createServer((req, res) => {
       res.end(data);
     }
   });
-});
+};
 
-server.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
-});
+const NODE_ENV = process.env.NODE_ENV || 'development'; // Default to development if not specified
+
+if (NODE_ENV === 'production') {
+  // Use Greenlock in production
+  import('greenlock-express').then(({ default: Greenlock }) => {
+    const maintainerEmail = process.env.MAINTAINER_EMAIL;
+
+    Greenlock.init({
+      packageRoot: __dirname,
+      configDir: './greenlock.d',
+      maintainerEmail,
+      cluster: false
+    })
+    .serve(serveFiles);
+  });
+} else {
+  // Use plain HTTP in development
+  const port = 8100;
+  http.createServer(serveFiles).listen(port, () => {
+    console.log(`Server is listening on port ${port}`);
+  });
+}
