@@ -1,0 +1,15 @@
+{
+  "name": "files",
+  "version": "1.0.0",
+  "description": "A simple file server that serves files on the web.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Jonas Raneryd Imaizumi",
+  "license": "MIT",
+  "dependencies": {
+  }
+}
