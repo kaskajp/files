@@ -5,11 +5,14 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "Jonas Raneryd Imaizumi",
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^16.4.5",
+    "greenlock-express": "^4.0.3"
   }
 }
