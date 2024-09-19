@@ -1,14 +1,11 @@
-import { fileURLToPath } from 'url';
-import { dirname, join, normalize, resolve, extname } from 'path';
+import { join, normalize, resolve, extname } from 'path';
 import { readFile, accessSync, constants } from 'fs';
 import dotenv from 'dotenv';
 import http from 'http';
+import https from 'https';
+import fs from 'fs';
 
 dotenv.config(); // Load environment variables from .env file
-
-// Simulating __dirname in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 const directoryName = './public';
 
@@ -50,8 +47,6 @@ const types = {
 const root = normalize(resolve(directoryName));
 
 const serveFiles = (req, res) => {
-  console.log(`${req.method} ${req.url}`);
-
   const extension = extname(req.url).slice(1);
   const type = extension ? types[extension] : types.html;
   const supportedExtension = Boolean(type);
@@ -93,25 +88,40 @@ const serveFiles = (req, res) => {
   });
 };
 
-const NODE_ENV = process.env.NODE_ENV || 'development'; // Default to development if not specified
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 if (NODE_ENV === 'production') {
-  // Use Greenlock in production
-  import('greenlock-express').then(({ default: Greenlock }) => {
-    const maintainerEmail = process.env.MAINTAINER_EMAIL;
+  // HTTPS server setup
+  const privateKeyPath = process.env.SSL_PRIVATE_KEY_PATH;
+  const certificatePath = process.env.SSL_CERTIFICATE_PATH;
 
-    Greenlock.init({
-      packageRoot: __dirname,
-      configDir: './greenlock.d',
-      maintainerEmail,
-      cluster: false
-    })
-    .serve(serveFiles);
+  if (!privateKeyPath || !certificatePath) {
+    console.error('SSL certificate paths are not set in the .env file');
+    process.exit(1);
+  }
+
+  const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
+  const certificate = fs.readFileSync(certificatePath, 'utf8');
+
+  const credentials = { key: privateKey, cert: certificate };
+
+  const httpsPort = process.env.HTTPS_PORT || 443;
+  https.createServer(credentials, serveFiles).listen(httpsPort, () => {
+    console.log(`HTTPS Server is listening on port ${httpsPort}`);
+  });
+
+  // HTTP to HTTPS redirect server
+  const httpPort = process.env.HTTP_PORT || 80;
+  http.createServer((req, res) => {
+    res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
+    res.end();
+  }).listen(httpPort, () => {
+    console.log(`HTTP to HTTPS redirect server listening on port ${httpPort}`);
   });
 } else {
   // Use plain HTTP in development
   const port = 8100;
   http.createServer(serveFiles).listen(port, () => {
-    console.log(`Server is listening on port ${port}`);
+    console.log(`Server is listening on port http://localhost:${port}.`);
   });
 }

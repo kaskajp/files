@@ -12,7 +12,6 @@
   "author": "Jonas Raneryd Imaizumi",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^16.4.5",
-    "greenlock-express": "^4.0.3"
+    "dotenv": "^16.4.5"
   }
 }
